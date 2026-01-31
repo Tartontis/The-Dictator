@@ -55,8 +55,13 @@ class TranscribeResponse(BaseModel):
     text: str
 
 @router.get("/health")
-async def health_check():
-    return {"status": "ok"}
+def health_check(settings: Settings = Depends(get_settings)):
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "transcription_model": settings.transcription.model,
+        "session_directory": str(settings.session.directory),
+    }
 
 @router.get("/config")
 def get_config(settings: Settings = Depends(get_settings)):

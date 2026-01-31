@@ -116,7 +116,8 @@ transcripts/
 # Configuration (user secrets)
 # ----------------------
 config/
-!config.example.toml
+!config/
+!config/*.example.toml
 
 # Environment files with secrets
 .env.local

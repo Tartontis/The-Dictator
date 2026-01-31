@@ -8,6 +8,7 @@ This document defines the contract between the frontend and backend. **If you ch
 
 ```
 http://127.0.0.1:8765
+http://127.0.0.1:8765/api
 ```
 
 ---
@@ -21,6 +22,7 @@ GET /health
 ```
 
 Returns server status and configuration info.
+Returns server status and core configuration info.
 
 **Response:**
 ```json
@@ -42,6 +44,7 @@ Content-Type: multipart/form-data
 ```
 
 Accepts audio file, returns transcribed text.
+Accepts an audio file and returns the transcribed text.
 
 **Request:**
 | Field | Type | Required | Description |
@@ -55,6 +58,12 @@ Accepts audio file, returns transcribed text.
 curl -X POST http://127.0.0.1:8765/transcribe \
   -F "audio=@recording.webm" \
   -F "language=en"
+| `file` | file | yes | Audio file (wav, webm, mp3, ogg, m4a, etc.) |
+
+**Example (curl):**
+```bash
+curl -X POST http://127.0.0.1:8765/api/transcribe \
+  -F "file=@recording.webm"
 ```
 
 **Response (200):**
@@ -72,6 +81,7 @@ curl -X POST http://127.0.0.1:8765/transcribe \
 {
   "error": "invalid_audio",
   "message": "Could not decode audio file"
+  "text": "This is the transcribed text from the audio."
 }
 ```
 
@@ -80,6 +90,7 @@ curl -X POST http://127.0.0.1:8765/transcribe \
 {
   "error": "transcription_failed",
   "message": "Whisper model failed to process audio"
+  "detail": "<error message>"
 }
 ```
 
@@ -112,6 +123,12 @@ Sends text to an LLM with a prompt template.
 **Example (curl):**
 ```bash
 curl -X POST http://127.0.0.1:8765/refine \
+| `template` | string | yes | Template name (e.g. fix_grammar, summarize) |
+| `provider` | string | no | LLM provider (anthropic, openai, ollama). Default: from config |
+
+**Example (curl):**
+```bash
+curl -X POST http://127.0.0.1:8765/api/refine \
   -H "Content-Type: application/json" \
   -d '{"text": "i want too go too the store", "template": "fix_grammar"}'
 ```
@@ -140,6 +157,14 @@ curl -X POST http://127.0.0.1:8765/refine \
 {
   "error": "provider_unavailable",
   "message": "Could not connect to Anthropic API"
+  "text": "I want to go to the store."
+}
+```
+
+**Response (500):**
+```json
+{
+  "detail": "<error message>"
 }
 ```
 
@@ -159,6 +184,7 @@ Appends text to today's session markdown file.
 {
   "text": "The text to append to the session log.",
   "tags": ["meeting", "idea"]
+  "text": "The text to append to the session log."
 }
 ```
 
@@ -170,6 +196,10 @@ Appends text to today's session markdown file.
 **Example (curl):**
 ```bash
 curl -X POST http://127.0.0.1:8765/session/append \
+
+**Example (curl):**
+```bash
+curl -X POST http://127.0.0.1:8765/api/session/append \
   -H "Content-Type: application/json" \
   -d '{"text": "Remember to call Bob about the project."}'
 ```
@@ -246,6 +276,15 @@ Returns contents of a session file.
 {
   "error": "session_not_found",
   "message": "No session file for 2025-01-30"
+  "status": "success",
+  "file": "transcripts/2025-01-31.md"
+}
+```
+
+**Response (500):**
+```json
+{
+  "detail": "<error message>"
 }
 ```
 
@@ -258,10 +297,20 @@ GET /config
 ```
 
 Returns current configuration (without sensitive values).
+Returns the current configuration as loaded from `config/settings.toml` (or the example file when missing).
 
 **Response:**
 ```json
 {
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8765
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "normalize": true
+  },
   "transcription": {
     "model": "small",
     "device": "cpu",
@@ -318,6 +367,40 @@ Returns available prompt templates.
       "category": "transform"
     }
   ]
+  "vad": {
+    "enabled": true,
+    "threshold": 0.5,
+    "min_speech_duration": 0.25,
+    "min_silence_duration": 1.0
+  },
+  "session": {
+    "directory": "./transcripts",
+    "date_format": "%Y-%m-%d",
+    "include_timestamps": true
+  },
+  "llm": {
+    "default_provider": "anthropic",
+    "anthropic": {
+      "model": "claude-sonnet-4-20250514",
+      "max_tokens": 1024
+    },
+    "openai": {
+      "model": "gpt-4o",
+      "max_tokens": 1024
+    },
+    "ollama": {
+      "base_url": "http://localhost:11434",
+      "model": "llama3.2"
+    }
+  },
+  "cluster": {
+    "enabled": false,
+    "endpoint": "http://hivecluster.local:8080"
+  },
+  "templates": {
+    "directory": "./prompts",
+    "default": "fix_grammar"
+  }
 }
 ```
 
@@ -375,6 +458,7 @@ All errors follow this format:
 ## Rate Limits
 
 No rate limits for local use. If you're somehow hitting this API so fast that it matters, you have bigger problems.
+Real-time streaming transcription (not implemented yet).
 
 ---
 
@@ -384,6 +468,7 @@ Backend allows requests from:
 - `http://localhost:*`
 - `http://127.0.0.1:*`
 - `file://` (for local HTML files)
+Backend allows requests from any origin (configured via `allow_origins=["*"]`).
 
 ---
 
@@ -392,3 +477,4 @@ Backend allows requests from:
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1.0 | 2025-01-31 | Initial API definition |
+| 0.1.0 | 2025-01-31 | Initial API definition (aligned to current endpoints) |
