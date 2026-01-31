@@ -63,7 +63,8 @@ async function stopRecording() {
 
 async function transcribe(audioBlob) {
     const formData = new FormData();
-    formData.append("file", audioBlob, "recording.wav");
+    const extension = getAudioExtension(audioBlob.type);
+    formData.append("file", audioBlob, `recording.${extension}`);
 
     try {
         ui.status.textContent = "Transcribing...";
@@ -82,6 +83,16 @@ async function transcribe(audioBlob) {
         console.error(err);
         ui.status.textContent = "Error during transcription";
     }
+}
+
+function getAudioExtension(mimeType) {
+    if (!mimeType) return "wav";
+
+    if (mimeType.includes("webm")) return "webm";
+    if (mimeType.includes("ogg")) return "ogg";
+    if (mimeType.includes("wav")) return "wav";
+
+    return "wav";
 }
 
 async function appendSession() {
@@ -241,7 +252,13 @@ ui.btnRecord.onclick = toggleRecording;
 ui.btnStop.onclick = stopRecording;
 ui.btnCopy.onclick = copyToClipboard;
 ui.btnAppend.onclick = appendSession;
-ui.btnClear.onclick = () => { ui.transcript.value = ""; };
+ui.btnClear.onclick = () => {
+    ui.transcript.value = "";
+    state.transcript = "";
+    if (!state.isRecording) {
+        ui.status.textContent = "Ready";
+    }
+};
 
 ui.btnRefine.onclick = () => {
     const template = ui.selectTemplate.value;
