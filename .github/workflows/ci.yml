@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Check documentation links
+        run: python scripts/check_doc_links.py
+
+      - name: Detect tests
+        id: tests
+        run: |
+          if [ -d tests ] && find tests -type f -name "test_*.py" | grep -q .; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pytest
+        if: steps.tests.outputs.present == 'true'
+        run: pytest
