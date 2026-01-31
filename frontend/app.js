@@ -1,0 +1,198 @@
+const API_URL = "http://localhost:8765/api";
+
+const state = {
+    isRecording: false,
+    transcript: ""
+};
+
+const recorder = new AudioRecorder();
+const ui = {
+    btnRecord: document.getElementById('btn-record'),
+    btnStop: document.getElementById('btn-stop'),
+    btnCopy: document.getElementById('btn-copy'),
+    btnAppend: document.getElementById('btn-append'),
+    btnClear: document.getElementById('btn-clear'),
+    transcript: document.getElementById('transcript'),
+    status: document.getElementById('status'),
+    apiStatus: document.getElementById('api-status'),
+    midiStatus: document.getElementById('midi-status')
+};
+
+// --- Actions ---
+
+async function toggleRecording() {
+    if (state.isRecording) {
+        await stopRecording();
+    } else {
+        await startRecording();
+    }
+}
+
+async function startRecording() {
+    try {
+        await recorder.start();
+        state.isRecording = true;
+        updateUI();
+    } catch (err) {
+        console.error("Failed to start recording:", err);
+        alert("Could not access microphone. Ensure you are using HTTPS or localhost.");
+    }
+}
+
+async function stopRecording() {
+    state.isRecording = false;
+    updateUI();
+
+    ui.status.textContent = "Processing...";
+
+    try {
+        const audioBlob = await recorder.stop();
+        if (audioBlob) {
+            await transcribe(audioBlob);
+        }
+    } catch (err) {
+        console.error(err);
+        ui.status.textContent = "Error stopping recording";
+    }
+}
+
+async function transcribe(audioBlob) {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "recording.wav");
+
+    try {
+        ui.status.textContent = "Transcribing...";
+        const res = await fetch(`${API_URL}/transcribe`, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        const data = await res.json();
+        state.transcript = data.text;
+        ui.transcript.value = state.transcript;
+        ui.status.textContent = "Transcribed";
+    } catch (err) {
+        console.error(err);
+        ui.status.textContent = "Error during transcription";
+    }
+}
+
+async function appendSession() {
+    const text = ui.transcript.value;
+    if (!text) return;
+
+    try {
+        const res = await fetch(`${API_URL}/session/append`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text })
+        });
+
+        if (res.ok) {
+            ui.status.textContent = "Appended to session";
+            setTimeout(() => {
+                if (!state.isRecording) ui.status.textContent = "Connected";
+            }, 2000);
+        }
+    } catch (err) {
+        console.error(err);
+        ui.status.textContent = "Error appending";
+    }
+}
+
+function copyToClipboard() {
+    const text = ui.transcript.value;
+    if (!text) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = ui.btnCopy.textContent;
+        ui.btnCopy.textContent = "Copied!";
+        setTimeout(() => ui.btnCopy.textContent = originalText, 1500);
+    }).catch(err => {
+        console.error("Failed to copy:", err);
+    });
+}
+
+// --- UI Updates ---
+
+function updateUI() {
+    if (state.isRecording) {
+        ui.btnRecord.classList.add('recording');
+        ui.btnRecord.textContent = "Stop Recording (Pad 1)";
+        ui.btnStop.disabled = false;
+        ui.status.textContent = "Recording...";
+    } else {
+        ui.btnRecord.classList.remove('recording');
+        ui.btnRecord.textContent = "Record (Pad 1)";
+        ui.btnStop.disabled = true;
+    }
+}
+
+// --- Initialization ---
+
+async function checkAPI() {
+    try {
+        const res = await fetch(`${API_URL}/health`);
+        if (res.ok) {
+            if (ui.status.textContent === "Disconnected" || ui.status.textContent === "API Disconnected") {
+                ui.status.textContent = "Connected";
+            }
+            ui.status.classList.remove('disconnected');
+            ui.status.classList.add('connected');
+            ui.apiStatus.textContent = "API: OK";
+        } else {
+            throw new Error();
+        }
+    } catch {
+        ui.status.classList.remove('connected');
+        ui.status.classList.add('disconnected');
+        ui.apiStatus.textContent = "API: Offline";
+    }
+}
+
+// MIDI Callback
+function handleAction(action) {
+    console.log("MIDI Action:", action);
+    ui.midiStatus.textContent = `MIDI Action: ${action}`;
+
+    switch(action) {
+        case "toggle_recording": toggleRecording(); break;
+        case "copy": copyToClipboard(); break;
+        case "append_session": appendSession(); break;
+        case "transcribe_copy":
+            if (state.isRecording) {
+                stopRecording().then(() => {
+                    // Wait for transcription then copy
+                    // A proper event system would be better here, but polling checks:
+                    const checkInterval = setInterval(() => {
+                        if (ui.status.textContent === "Transcribed") {
+                            copyToClipboard();
+                            clearInterval(checkInterval);
+                        }
+                    }, 500);
+                });
+            } else {
+                // If not recording, just copy what's there
+                copyToClipboard();
+            }
+            break;
+    }
+}
+
+// Event Listeners
+ui.btnRecord.onclick = toggleRecording;
+ui.btnStop.onclick = stopRecording;
+ui.btnCopy.onclick = copyToClipboard;
+ui.btnAppend.onclick = appendSession;
+ui.btnClear.onclick = () => { ui.transcript.value = ""; };
+
+// Start
+const midiHandler = new MIDIHandler(handleAction);
+midiHandler.init().then(success => {
+    ui.midiStatus.textContent = success ? "MIDI: Active" : "MIDI: Not Available";
+});
+
+checkAPI();
+setInterval(checkAPI, 5000);
