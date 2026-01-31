@@ -219,6 +219,8 @@ function handleAction(action) {
         case "transcribe_copy":
             if (state.isRecording) {
                 stopRecording().then(() => {
+                    // Wait for transcription then copy
+                    // A proper event system would be better here, but polling checks:
                     const checkInterval = setInterval(() => {
                         if (ui.status.textContent === "Transcribed") {
                             copyToClipboard();
@@ -227,6 +229,7 @@ function handleAction(action) {
                     }, 500);
                 });
             } else {
+                // If not recording, just copy what's there
                 copyToClipboard();
             }
             break;

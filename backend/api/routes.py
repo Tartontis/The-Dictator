@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from backend.config import load_settings, Settings
 from backend.engine import Transcriber, LLMEngine
+from backend.engine import Transcriber
 from backend.output import SessionLogger
 
 router = APIRouter()
@@ -46,6 +47,9 @@ class RefineRequest(BaseModel):
     text: str
     template: str
     provider: Optional[str] = None
+
+class AppendRequest(BaseModel):
+    text: str
 
 class TranscribeResponse(BaseModel):
     text: str
