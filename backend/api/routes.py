@@ -2,10 +2,12 @@ import shutil
 import tempfile
 import logging
 from pathlib import Path
+from typing import Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
 
 from backend.config import load_settings, Settings
+from backend.engine import Transcriber, LLMEngine
 from backend.engine import Transcriber
 from backend.output import SessionLogger
 
@@ -15,6 +17,7 @@ logger = logging.getLogger(__name__)
 # Singleton instances
 _transcriber = None
 _session_logger = None
+_llm_engine = None
 
 def get_settings():
     return load_settings()
@@ -30,6 +33,20 @@ def get_session_logger(settings: Settings = Depends(get_settings)):
     if _session_logger is None:
         _session_logger = SessionLogger(settings)
     return _session_logger
+
+def get_llm_engine(settings: Settings = Depends(get_settings)):
+    global _llm_engine
+    if _llm_engine is None:
+        _llm_engine = LLMEngine(settings)
+    return _llm_engine
+
+class AppendRequest(BaseModel):
+    text: str
+
+class RefineRequest(BaseModel):
+    text: str
+    template: str
+    provider: Optional[str] = None
 
 class AppendRequest(BaseModel):
     text: str
@@ -83,4 +100,20 @@ def append_session(
         return {"status": "success", "file": str(path)}
     except Exception as e:
         logger.error(f"Failed to append to session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/refine")
+async def refine_text(
+    request: RefineRequest,
+    llm_engine: LLMEngine = Depends(get_llm_engine)
+):
+    try:
+        refined_text = await llm_engine.refine_text(
+            text=request.text,
+            template_name=request.template,
+            provider=request.provider
+        )
+        return {"text": refined_text}
+    except Exception as e:
+        logger.error(f"Refinement failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

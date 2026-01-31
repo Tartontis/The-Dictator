@@ -58,6 +58,7 @@ header {
     transition: background-color 0.2s;
     background-color: #3182ce;
     color: white;
+    white-space: nowrap;
 }
 
 .btn:disabled {
@@ -67,6 +68,7 @@ header {
 
 .btn-record {
     background-color: #e53e3e;
+    flex-grow: 1;
 }
 
 .btn-record.recording {
@@ -94,6 +96,21 @@ textarea {
 .actions {
     display: flex;
     gap: 1rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.refine-group, .main-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.select-input {
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 1rem;
     justify-content: flex-end;
 }
 

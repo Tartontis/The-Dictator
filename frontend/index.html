@@ -24,6 +24,20 @@
             </div>
 
             <div class="actions">
+                <div class="refine-group">
+                    <select id="template-select" class="select-input">
+                        <option value="fix_grammar">Fix Grammar</option>
+                        <option value="summarize">Summarize</option>
+                        <option value="deep_research">Deep Research</option>
+                        <option value="expand">Expand</option>
+                    </select>
+                    <button id="btn-refine" class="btn btn-secondary">Refine (Pad 5-8)</button>
+                </div>
+                <div class="main-actions">
+                    <button id="btn-copy" class="btn">Copy (Pad 3)</button>
+                    <button id="btn-append" class="btn">Append (Pad 4)</button>
+                    <button id="btn-clear" class="btn btn-secondary">Clear</button>
+                </div>
                 <button id="btn-copy" class="btn">Copy (Pad 3)</button>
                 <button id="btn-append" class="btn">Append to Session (Pad 4)</button>
                 <button id="btn-clear" class="btn btn-secondary">Clear</button>
