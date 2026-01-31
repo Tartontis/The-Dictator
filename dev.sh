@@ -24,7 +24,7 @@ if [ ! -f "config/settings.toml" ]; then
     echo "Warning: config/settings.toml not found."
     echo "Creating from example..."
     mkdir -p config
-    cp config.example.toml config/settings.toml
+    cp config/settings.example.toml config/settings.toml
 fi
 
 # Start backend with auto-reload
