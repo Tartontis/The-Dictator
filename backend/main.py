@@ -15,7 +15,7 @@ settings = load_settings()
 app = FastAPI(
     title="The Dictator",
     description="Local-first voice dictation API",
-    version="0.1.0"
+    version="0.0.1"
 )
 
 app.add_middleware(
