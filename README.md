@@ -8,6 +8,12 @@ This repo is **doc-first** on purpose. Multiple coding agents will touch it; the
 
 ---
 
+## Documentation (Source of Truth)
+
+The `docs/` directory is the canonical source of truth for architecture, API contracts, and agent workflow rules. ADRs live in `docs/adr/` and capture key architectural decisions.
+
+---
+
 ## What this is (and is not)
 
 ✅ **Local transcription** — your voice stays on your machine  
