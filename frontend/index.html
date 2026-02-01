@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Dictator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Dictator</h1>
+            <div id="status" class="status-indicator disconnected">Disconnected</div>
+        </header>
+
+        <main>
+            <div class="controls">
+                <button id="btn-record" class="btn btn-record">Record (Pad 1)</button>
+                <button id="btn-stop" class="btn btn-secondary" disabled>Stop</button>
+            </div>
+
+            <div class="transcript-area">
+                <textarea id="transcript" placeholder="Your transcript will appear here..."></textarea>
+            </div>
+
+            <div class="actions">
+                <div class="refine-group">
+                    <select id="template-select" class="select-input">
+                        <option value="fix_grammar">Fix Grammar</option>
+                        <option value="summarize">Summarize</option>
+                        <option value="deep_research">Deep Research</option>
+                        <option value="expand">Expand</option>
+                    </select>
+                    <button id="btn-refine" class="btn btn-secondary">Refine (Pad 5-8)</button>
+                </div>
+                <div class="main-actions">
+                    <button id="btn-copy" class="btn">Copy (Pad 3)</button>
+                    <button id="btn-append" class="btn">Append (Pad 4)</button>
+                    <button id="btn-clear" class="btn btn-secondary">Clear</button>
+                </div>
+            </div>
+
+            <div id="info-panel">
+                 <div id="midi-status">MIDI: Initializing...</div>
+                 <div id="api-status">API: Checking...</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="midi.js"></script>
+    <script src="hotkeys.js"></script>
+    <script src="recorder.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
