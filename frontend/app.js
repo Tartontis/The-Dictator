@@ -1,8 +1,11 @@
 const API_URL = "http://localhost:8765/api";
+const STORAGE_KEY = "dictator.offline.transcript";
 
 const state = {
     isRecording: false,
-    transcript: ""
+    isOffline: true,
+    transcript: "",
+    autosaveTimer: null
 };
 
 const recorder = new AudioRecorder();
@@ -12,12 +15,18 @@ const ui = {
     btnCopy: document.getElementById('btn-copy'),
     btnAppend: document.getElementById('btn-append'),
     btnClear: document.getElementById('btn-clear'),
+    btnDownload: document.getElementById('btn-download'),
 
     // New Refs
     selectTemplate: document.getElementById('template-select'),
     btnRefine: document.getElementById('btn-refine'),
 
     transcript: document.getElementById('transcript'),
+    offlineToggle: document.getElementById('offline-toggle'),
+    autosaveStatus: document.getElementById('autosave-status'),
+    wordCount: document.getElementById('word-count'),
+    charCount: document.getElementById('char-count'),
+    lastSaved: document.getElementById('last-saved'),
     status: document.getElementById('status'),
     apiStatus: document.getElementById('api-status'),
     midiStatus: document.getElementById('midi-status')
@@ -96,6 +105,10 @@ function getAudioExtension(mimeType) {
 }
 
 async function appendSession() {
+    if (state.isOffline) {
+        ui.status.textContent = "Offline-only: session append disabled";
+        return;
+    }
     const text = ui.transcript.value;
     if (!text) return;
 
@@ -119,6 +132,10 @@ async function appendSession() {
 }
 
 async function refineText(templateName) {
+    if (state.isOffline) {
+        ui.status.textContent = "Offline-only: refinement disabled";
+        return;
+    }
     const text = ui.transcript.value;
     if (!text) return;
 
@@ -160,6 +177,63 @@ function copyToClipboard() {
     });
 }
 
+function updateStats(text) {
+    const trimmed = text.trim();
+    const words = trimmed ? trimmed.split(/\s+/).length : 0;
+    ui.wordCount.textContent = String(words);
+    ui.charCount.textContent = String(text.length);
+}
+
+function setAutosaveStatus(message) {
+    ui.autosaveStatus.textContent = message;
+}
+
+function saveTranscript() {
+    const text = ui.transcript.value;
+    localStorage.setItem(STORAGE_KEY, text);
+    const timestamp = new Date();
+    ui.lastSaved.textContent = timestamp.toLocaleTimeString();
+    setAutosaveStatus("Saved");
+}
+
+function scheduleAutosave() {
+    setAutosaveStatus("Saving...");
+    if (state.autosaveTimer) {
+        clearTimeout(state.autosaveTimer);
+    }
+    state.autosaveTimer = setTimeout(() => {
+        saveTranscript();
+        state.autosaveTimer = null;
+    }, 500);
+}
+
+function downloadTranscript() {
+    const text = ui.transcript.value.trim();
+    if (!text) return;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    link.href = url;
+    link.download = `dictator-transcript-${timestamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function updateOfflineMode() {
+    state.isOffline = ui.offlineToggle.checked;
+    ui.btnAppend.disabled = state.isOffline;
+    ui.selectTemplate.disabled = state.isOffline;
+    if (state.isOffline) {
+        ui.btnRefine.disabled = true;
+    } else if (!state.isRecording) {
+        ui.btnRefine.disabled = false;
+    }
+    ui.apiStatus.textContent = state.isOffline ? "API: Local-only" : ui.apiStatus.textContent;
+}
+
 // --- UI Updates ---
 
 function updateUI() {
@@ -168,13 +242,12 @@ function updateUI() {
         ui.btnRecord.textContent = "Stop Recording (Pad 1)";
         ui.btnStop.disabled = false;
         ui.status.textContent = "Recording...";
-        // Disable refinement while recording
         ui.btnRefine.disabled = true;
     } else {
         ui.btnRecord.classList.remove('recording');
         ui.btnRecord.textContent = "Record (Pad 1)";
         ui.btnStop.disabled = true;
-        ui.btnRefine.disabled = false;
+        ui.btnRefine.disabled = state.isOffline;
     }
 }
 
@@ -189,7 +262,7 @@ async function checkAPI() {
             }
             ui.status.classList.remove('disconnected');
             ui.status.classList.add('connected');
-            ui.apiStatus.textContent = "API: OK";
+            ui.apiStatus.textContent = state.isOffline ? "API: Local-only" : "API: OK";
         } else {
             throw new Error();
         }
@@ -252,13 +325,23 @@ ui.btnRecord.onclick = toggleRecording;
 ui.btnStop.onclick = stopRecording;
 ui.btnCopy.onclick = copyToClipboard;
 ui.btnAppend.onclick = appendSession;
+ui.btnDownload.onclick = downloadTranscript;
 ui.btnClear.onclick = () => {
     ui.transcript.value = "";
     state.transcript = "";
+    updateStats("");
+    saveTranscript();
     if (!state.isRecording) {
         ui.status.textContent = "Ready";
     }
 };
+ui.offlineToggle.onchange = updateOfflineMode;
+ui.transcript.addEventListener("input", () => {
+    const text = ui.transcript.value;
+    state.transcript = text;
+    updateStats(text);
+    scheduleAutosave();
+});
 
 ui.btnRefine.onclick = () => {
     const template = ui.selectTemplate.value;
@@ -271,5 +354,16 @@ midiHandler.init().then(success => {
     ui.midiStatus.textContent = success ? "MIDI: Active" : "MIDI: Not Available";
 });
 
+const savedTranscript = localStorage.getItem(STORAGE_KEY);
+if (savedTranscript) {
+    ui.transcript.value = savedTranscript;
+    state.transcript = savedTranscript;
+    updateStats(savedTranscript);
+    ui.status.textContent = "Session restored";
+} else {
+    updateStats("");
+}
+setAutosaveStatus("Idle");
+updateOfflineMode();
 checkAPI();
 setInterval(checkAPI, 5000);
