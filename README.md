@@ -196,23 +196,22 @@ See: [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/agent-playbook.md`](docs/ag
 
 ```bash
 # Clone
-git clone https://github.com/yourusername/The-Dictator.git
-cd The-Dictator
+git clone https://github.com/ewhhansen-dev/The-Dictator-offline_Essential.git
+cd The-Dictator-offline_Essential
 
 # Backend setup
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Download Whisper model
-./scripts/download_model.sh small
-
 # Copy example config
 cp config/settings.example.toml config/settings.toml
 
-# Run
+# Run backend
 ./scripts/dev.sh
-# Opens browser to http://localhost:8000
+
+# Open frontend/index.html in your browser
+# Backend runs at http://localhost:8765
 ```
 
 ### MIDI Button Map (Default)
