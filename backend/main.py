@@ -23,8 +23,11 @@ app.add_middleware(
     allow_origins=[
         "http://localhost",
         "http://localhost:8000",
+        "http://localhost:8765",
         "http://127.0.0.1",
         "http://127.0.0.1:8000",
+        "http://127.0.0.1:8765",
+        "null",  # Allow file:// protocol for opening frontend/index.html directly
     ],
     allow_credentials=False,
     allow_methods=["*"],

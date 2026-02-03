@@ -82,10 +82,10 @@ vad = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/The-Dictator"
-Documentation = "https://github.com/yourusername/The-Dictator/tree/main/docs"
-Repository = "https://github.com/yourusername/The-Dictator"
-Issues = "https://github.com/yourusername/The-Dictator/issues"
+Homepage = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential"
+Documentation = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential/tree/main/docs"
+Repository = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential"
+Issues = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential/issues"
 
 [project.scripts]
 the-dictator = "backend.main:cli"

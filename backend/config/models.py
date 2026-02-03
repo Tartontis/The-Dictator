@@ -41,7 +41,7 @@ class OllamaConfig(BaseModel):
     model: str = "llama3.2"
 
 class LLMConfig(BaseModel):
-    default_provider: Literal["anthropic", "openai", "ollama"] = "anthropic"
+    default_provider: Literal["anthropic", "openai", "ollama"] = "ollama"
     anthropic: Optional[AnthropicConfig] = None
     openai: Optional[OpenAIConfig] = None
     ollama: Optional[OllamaConfig] = None
