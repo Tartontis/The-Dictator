@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "the-dictator"
-version = "0.1.0"
+version = "0.0.1"
 description = "Local-first voice dictation with MIDI control and LLM refinement"
 readme = "README.md"
 license = "MIT"
@@ -96,12 +96,13 @@ packages = ["backend"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/backend",
+    "/config",
     "/frontend",
     "/docs",
     "/prompts",
     "/scripts",
-    "/config.example.toml",
-    "/button_map.example.toml",
+    "/config/settings.example.toml",
+    "/config/button_map.example.toml",
 ]
 
 # =============================================================================

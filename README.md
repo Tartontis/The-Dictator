@@ -8,6 +8,12 @@ This repo is **doc-first** on purpose. Multiple coding agents will touch it; the
 
 ---
 
+## Documentation (Source of Truth)
+
+The `docs/` directory is the canonical source of truth for architecture, API contracts, and agent workflow rules. ADRs live in `docs/adr/` and capture key architectural decisions.
+
+---
+
 ## What this is (and is not)
 
 ✅ **Local transcription** — your voice stays on your machine  
@@ -85,7 +91,7 @@ See: [`docs/architecture.md`](docs/architecture.md) and ADR [`docs/adr/0001-brow
 - [ ] **Transcript panel** — editable text area in browser
 - [ ] **Copy button** — clipboard via `navigator.clipboard`
 - [ ] **Append to session** — writes to `transcripts/YYYY-MM-DD.md`
-- [ ] **Minimal config** — `config.example.toml`
+- [ ] **Minimal config** — `config/settings.example.toml`
 
 Contract details: [`docs/api.md`](docs/api.md)
 
@@ -104,7 +110,9 @@ The-Dictator/
 │
 ├── config/                      # User configuration (gitignored)
 │   ├── settings.toml            # API endpoints, audio device, model choice
-│   └── button_map.toml          # MIDI note → action mapping
+│   ├── settings.example.toml    # Config template
+│   ├── button_map.toml          # MIDI note → action mapping
+│   └── button_map.example.toml  # MIDI note → action mapping template
 │
 ├── docs/                        # The contract
 │   ├── architecture.md          # System design deep-dive
@@ -124,7 +132,7 @@ The-Dictator/
 │   ├── main.py                  # FastAPI app, entry point
 │   ├── api/
 │   │   ├── __init__.py
-│   │   ├── routes.py            # /transcribe, /health, /config
+│   │   ├── routes.py            # /api/transcribe, /api/health, /api/config
 │   │   └── websocket.py         # Real-time audio streaming (future)
 │   ├── engine/
 │   │   ├── __init__.py
@@ -166,7 +174,7 @@ The-Dictator/
 
 3. **Keep the MVP boring.** Fancy comes after "works every time."
 
-4. **Config is gitignored.** Commit `config.example.toml`, never `config/settings.toml`.
+4. **Config is gitignored.** Commit `config/settings.example.toml`, never `config/settings.toml`.
 
 5. **One agent, one module.** If two agents need to touch the same file, coordinate via PR or docs first.
 
@@ -200,7 +208,7 @@ pip install -e ".[dev]"
 ./scripts/download_model.sh small
 
 # Copy example config
-cp config.example.toml config/settings.toml
+cp config/settings.example.toml config/settings.toml
 
 # Run
 ./scripts/dev.sh
@@ -229,7 +237,7 @@ Full mapping: `config/button_map.toml`
 ## Roadmap
 
 ### Phase 1: MVP (Current)
-- [ ] Backend: `/transcribe` endpoint with faster-whisper
+- [ ] Backend: `/api/transcribe` endpoint with faster-whisper
 - [ ] Backend: Session logger (`transcripts/YYYY-MM-DD.md`)
 - [ ] Frontend: Record/Stop button
 - [ ] Frontend: Transcript panel with Copy button

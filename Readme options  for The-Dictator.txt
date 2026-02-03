@@ -48,7 +48,7 @@ See: `docs/architecture.md` and ADR `docs/adr/0001-browser-ui-split.md`.
 - Transcript panel (editable)
 - **Copy** button (clipboard)
 - **Append to session** button (writes to `transcripts/YYYY-MM-DD.md`)
-- Minimal config file (`config.example.toml`)
+- Minimal config file (`config/settings.example.toml`)
 
 Contract details live in `docs/api.md`.
 
@@ -119,7 +119,7 @@ See: `docs/architecture.md` and ADR `docs/adr/0001-browser-ui-split.md`.
 - Transcript panel (editable)
 - **Copy** button (clipboard)
 - **Append to session** button (writes to `transcripts/YYYY-MM-DD.md`)
-- Minimal config file (`config.example.toml`)
+- Minimal config file (`config/settings.example.toml`)
 
 Contract details live in `docs/api.md`.
 
