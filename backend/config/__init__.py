@@ -1,4 +1,4 @@
-from .models import Settings
 from .loader import load_settings
+from .models import Settings
 
 __all__ = ["Settings", "load_settings"]

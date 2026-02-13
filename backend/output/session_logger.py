@@ -1,6 +1,8 @@
 from datetime import datetime
 from pathlib import Path
+
 from backend.config import Settings
+
 
 class SessionLogger:
     def __init__(self, settings: Settings):

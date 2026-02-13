@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Union
+
 try:
     from faster_whisper import WhisperModel
 except ImportError:
@@ -30,7 +30,7 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
-    def transcribe(self, audio_path: Union[str, Path]) -> str:
+    def transcribe(self, audio_path: str | Path) -> str:
         self.load_model()
 
         logger.info(f"Transcribing audio file: {audio_path}")
