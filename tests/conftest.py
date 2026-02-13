@@ -1,8 +1,9 @@
 """
 Pytest configuration and fixtures for The Dictator tests.
 """
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture

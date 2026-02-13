@@ -1,12 +1,13 @@
 import logging
 from pathlib import Path
-from typing import Union, BinaryIO
+from typing import BinaryIO
+
+from backend.config import Settings
+
 try:
     from faster_whisper import WhisperModel
 except ImportError:
     WhisperModel = None
-
-from backend.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
-    def transcribe(self, audio_path: Union[str, Path, BinaryIO]) -> str:
+    def transcribe(self, audio_path: str | Path | BinaryIO) -> str:
         self.load_model()
 
         logger.info(f"Transcribing audio file: {audio_path}")

@@ -1,9 +1,7 @@
-import pytest
-from unittest.mock import MagicMock, patch
-from fastapi.testclient import TestClient
 import io
-import sys
-from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+from fastapi.testclient import TestClient
 
 # We need to mock faster_whisper before importing backend.engine
 # because backend.engine imports it at module level (or inside load_model)
@@ -29,9 +27,8 @@ def test_transcribe_endpoint_uses_memory_file():
     # Patch WhisperModel in backend.engine.transcriber module
     with patch("backend.engine.transcriber.WhisperModel", MockModel):
 
-        from backend.main import app
         from backend.engine import Transcriber
-        from backend.config import Settings
+        from backend.main import app
 
         # Mock settings
         # We need to create a valid Settings object or mock it
