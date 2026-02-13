@@ -1,15 +1,24 @@
 """
 Tests for LLM refinement functionality.
 """
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from pathlib import Path
-from backend.engine.llm import LLMEngine
+
 from backend.config.models import (
-    Settings, ServerConfig, AudioConfig, TranscriptionConfig,
-    VadConfig, SessionConfig, LLMConfig, AnthropicConfig,
-    ClusterConfig, TemplatesConfig
+    AnthropicConfig,
+    AudioConfig,
+    ClusterConfig,
+    LLMConfig,
+    ServerConfig,
+    SessionConfig,
+    Settings,
+    TemplatesConfig,
+    TranscriptionConfig,
+    VadConfig,
 )
+from backend.engine.llm import LLMEngine
+
 
 # Mock environment variables to avoid real API keys
 @pytest.fixture
