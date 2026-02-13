@@ -1,7 +1,6 @@
 """
 Tests for API endpoints.
 """
-import pytest
 
 
 def test_routes_import():
