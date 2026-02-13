@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -88,7 +89,7 @@ class LLMEngine:
         Refine text using an LLM and a prompt template.
         """
         # Render prompt
-        prompt = self.render_template(template_name, text=text)
+        prompt = await asyncio.to_thread(self.render_template, template_name, text=text)
 
         # Determine provider
         if not provider:
