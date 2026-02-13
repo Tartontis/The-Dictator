@@ -1,6 +1,8 @@
 import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.api.routes import router
 from backend.config import load_settings
 
