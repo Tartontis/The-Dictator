@@ -29,3 +29,13 @@ def test_config_models_import():
     assert Settings is not None
     assert ServerConfig is not None
     assert LLMConfig is not None
+
+
+def test_config_caching():
+    """Verify that configuration is cached."""
+    from backend.config import load_settings
+
+    settings_1 = load_settings()
+    settings_2 = load_settings()
+
+    assert settings_1 is settings_2, "Settings should be cached and return same instance"
