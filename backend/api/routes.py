@@ -1,7 +1,4 @@
-import shutil
-import tempfile
 import logging
-from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
@@ -70,26 +67,12 @@ def transcribe_audio(
 ) -> TranscribeResponse:
     logger.info(f"Received audio upload: {file.filename}")
 
-    # Save upload to temp file
-    # Ensure we keep the extension so ffmpeg/whisper knows format
-    suffix = Path(file.filename).suffix
-    if not suffix:
-        suffix = ".wav" # Default to wav if unknown
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
-
     try:
-        text = transcriber.transcribe(tmp_path)
+        text = transcriber.transcribe(file.file)
         return TranscribeResponse(text=text)
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Clean up
-        if tmp_path.exists():
-            tmp_path.unlink()
 
 @router.post("/session/append")
 def append_session(
