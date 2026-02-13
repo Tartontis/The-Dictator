@@ -8,6 +8,7 @@ sys.path.insert(0, str(root_dir))
 
 from backend.output.gui import VoxPadApp  # noqa: E402
 
+
 def main():
     app = VoxPadApp()
     app.run()

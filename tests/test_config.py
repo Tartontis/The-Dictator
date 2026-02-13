@@ -1,7 +1,6 @@
 """
 Tests for configuration loading.
 """
-import pytest
 from pathlib import Path
 
 
@@ -25,7 +24,7 @@ def test_config_loader_import():
 
 def test_config_models_import():
     """Verify config models can be imported."""
-    from backend.config.models import Settings, ServerConfig, LLMConfig
+    from backend.config.models import LLMConfig, ServerConfig, Settings
     assert Settings is not None
     assert ServerConfig is not None
     assert LLMConfig is not None
