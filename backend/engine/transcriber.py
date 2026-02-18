@@ -31,6 +31,7 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
+    def transcribe(self, audio_path: str | Path) -> str:
     def transcribe(self, audio_path: str | Path | BinaryIO) -> str:
         self.load_model()
 

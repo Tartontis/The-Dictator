@@ -79,6 +79,8 @@ class LLMEngine:
         try:
             template = self.env.get_template(template_name)
             return template.render(**kwargs)
+        except TemplateNotFound as e:
+            raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}") from e
         except TemplateNotFound:
             raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}") from None
 
