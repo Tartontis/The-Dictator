@@ -1,9 +1,9 @@
 import logging
 import os
-from pathlib import Path
-from typing import Optional, Dict, Any
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+from backend.config import Settings
 
 # Import clients conditionally to avoid hard dependencies if not used
 try:
@@ -16,7 +16,6 @@ try:
 except ImportError:
     AsyncOpenAI = None
 
-from backend.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +80,9 @@ class LLMEngine:
             template = self.env.get_template(template_name)
             return template.render(**kwargs)
         except TemplateNotFound:
-            raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}")
+            raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}") from None
 
-    async def refine_text(self, text: str, template_name: str, provider: Optional[str] = None) -> str:
+    async def refine_text(self, text: str, template_name: str, provider: str | None = None) -> str:
         """
         Refine text using an LLM and a prompt template.
         """

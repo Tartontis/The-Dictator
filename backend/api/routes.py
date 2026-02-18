@@ -1,13 +1,10 @@
-import shutil
-import tempfile
 import logging
-from pathlib import Path
-from typing import Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from backend.config import load_settings, Settings
-from backend.engine import Transcriber, LLMEngine
+from backend.config import Settings, load_settings
+from backend.engine import LLMEngine, Transcriber
 from backend.output import SessionLogger
 
 router = APIRouter()
@@ -45,7 +42,7 @@ class AppendRequest(BaseModel):
 class RefineRequest(BaseModel):
     text: str
     template: str
-    provider: Optional[str] = None
+    provider: str | None = None
 
 class TranscribeResponse(BaseModel):
     text: str
@@ -70,26 +67,12 @@ def transcribe_audio(
 ) -> TranscribeResponse:
     logger.info(f"Received audio upload: {file.filename}")
 
-    # Save upload to temp file
-    # Ensure we keep the extension so ffmpeg/whisper knows format
-    suffix = Path(file.filename).suffix
-    if not suffix:
-        suffix = ".wav" # Default to wav if unknown
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
-
     try:
-        text = transcriber.transcribe(tmp_path)
+        text = transcriber.transcribe(file.file)
         return TranscribeResponse(text=text)
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Clean up
-        if tmp_path.exists():
-            tmp_path.unlink()
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.post("/session/append")
 def append_session(
@@ -101,7 +84,7 @@ def append_session(
         return {"status": "success", "file": str(path)}
     except Exception as e:
         logger.error(f"Failed to append to session: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.post("/refine")
 async def refine_text(
@@ -117,4 +100,4 @@ async def refine_text(
         return {"text": refined_text}
     except Exception as e:
         logger.error(f"Refinement failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
