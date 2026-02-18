@@ -17,6 +17,7 @@ try:
 except ImportError:
     AsyncOpenAI = None
 
+
 logger = logging.getLogger(__name__)
 
 class LLMEngine:
@@ -81,6 +82,8 @@ class LLMEngine:
             return template.render(**kwargs)
         except TemplateNotFound as e:
             raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}") from e
+        except TemplateNotFound:
+            raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}") from None
 
     async def refine_text(self, text: str, template_name: str, provider: str | None = None) -> str:
         """
