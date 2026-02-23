@@ -72,9 +72,7 @@ include_timestamps = true
 # =============================================================================
 [llm]
 # Default provider when not specified in request
-# Use "ollama" for permission-free local operation (no API key needed)
-# Use "anthropic" or "openai" for cloud LLM (requires API key)
-default_provider = "ollama"
+default_provider = "anthropic"
 
 # Anthropic (Claude)
 # Set ANTHROPIC_API_KEY environment variable

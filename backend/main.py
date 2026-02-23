@@ -1,6 +1,8 @@
 import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.api.routes import router
 from backend.config import load_settings
 
@@ -15,7 +17,7 @@ settings = load_settings()
 app = FastAPI(
     title="The Dictator",
     description="Local-first voice dictation API",
-    version="0.0.1"
+    version="0.1.0"
 )
 
 app.add_middleware(
@@ -27,9 +29,9 @@ app.add_middleware(
         "http://127.0.0.1",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:8765",
-        "null",  # Allow file:// protocol for opening frontend/index.html directly
+        "null",
     ],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
