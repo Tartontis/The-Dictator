@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Union
+
 try:
     from faster_whisper import WhisperModel
 except ImportError:
@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 class Transcriber:
     def __init__(self, settings: Settings):
         self.settings = settings.transcription
+        self.vad_settings = settings.vad
         self.model = None
 
     def load_model(self):
@@ -30,7 +31,7 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
-    def transcribe(self, audio_path: Union[str, Path]) -> str:
+    def transcribe(self, audio_path: str | Path) -> str:
         self.load_model()
 
         logger.info(f"Transcribing audio file: {audio_path}")
@@ -41,10 +42,22 @@ class Transcriber:
         if lang == "auto":
             lang = None
 
+        vad_filter = self.vad_settings.enabled
+        vad_parameters = None
+
+        if vad_filter:
+            vad_parameters = {
+                "threshold": self.vad_settings.threshold,
+                "min_speech_duration_ms": int(self.vad_settings.min_speech_duration * 1000),
+                "min_silence_duration_ms": int(self.vad_settings.min_silence_duration * 1000),
+            }
+
         segments, info = self.model.transcribe(
             str(audio_path),
             language=lang,
-            beam_size=5
+            beam_size=5,
+            vad_filter=vad_filter,
+            vad_parameters=vad_parameters
         )
 
         logger.info(f"Detected language '{info.language}' with probability {info.language_probability}")

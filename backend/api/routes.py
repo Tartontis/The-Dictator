@@ -1,13 +1,13 @@
+import logging
 import shutil
 import tempfile
-import logging
 from pathlib import Path
-from typing import Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from backend.config import load_settings, Settings
-from backend.engine import Transcriber, LLMEngine
+from backend.config import Settings, load_settings
+from backend.engine import LLMEngine, Transcriber
 from backend.output import SessionLogger
 
 router = APIRouter()
@@ -45,7 +45,7 @@ class AppendRequest(BaseModel):
 class RefineRequest(BaseModel):
     text: str
     template: str
-    provider: Optional[str] = None
+    provider: str | None = None
 
 class TranscribeResponse(BaseModel):
     text: str
@@ -85,7 +85,7 @@ def transcribe_audio(
         return TranscribeResponse(text=text)
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     finally:
         # Clean up
         if tmp_path.exists():
@@ -101,7 +101,7 @@ def append_session(
         return {"status": "success", "file": str(path)}
     except Exception as e:
         logger.error(f"Failed to append to session: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.post("/refine")
 async def refine_text(
@@ -117,4 +117,4 @@ async def refine_text(
         return {"text": refined_text}
     except Exception as e:
         logger.error(f"Refinement failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
