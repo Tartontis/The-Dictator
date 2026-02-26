@@ -1,9 +1,9 @@
 """
 Tests for prompt templates.
 """
-import pytest
 from pathlib import Path
 
+import pytest
 
 EXPECTED_TEMPLATES = [
     "fix_grammar.j2",

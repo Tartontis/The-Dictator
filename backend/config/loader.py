@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -13,6 +14,7 @@ DEFAULT_CONFIG_PATHS = [
     Path("config.example.toml"),
 ]
 
+@lru_cache(maxsize=1)
 def load_settings() -> Settings:
     config_file = CONFIG_PATH
     if not config_file.exists():
