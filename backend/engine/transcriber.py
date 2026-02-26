@@ -1,12 +1,13 @@
 import logging
 from pathlib import Path
+from typing import BinaryIO
+
+from backend.config import Settings
 
 try:
     from faster_whisper import WhisperModel
 except ImportError:
     WhisperModel = None
-
-from backend.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Transcriber:
             logger.info("Model loaded")
 
     def transcribe(self, audio_path: str | Path) -> str:
+    def transcribe(self, audio_path: str | Path | BinaryIO) -> str:
         self.load_model()
 
         logger.info(f"Transcribing audio file: {audio_path}")
@@ -41,8 +43,12 @@ class Transcriber:
         if lang == "auto":
             lang = None
 
+        # faster-whisper accepts str (path) or file-like object.
+        # If it's a Path object, convert to str.
+        audio_input = str(audio_path) if isinstance(audio_path, Path) else audio_path
+
         segments, info = self.model.transcribe(
-            str(audio_path),
+            audio_input,
             language=lang,
             beam_size=5
         )

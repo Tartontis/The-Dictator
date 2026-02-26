@@ -1,8 +1,11 @@
 const API_URL = "http://localhost:8765/api";
+const STORAGE_KEY = "dictator.offline.transcript";
 
 const state = {
     isRecording: false,
-    transcript: ""
+    isOffline: true,
+    transcript: "",
+    autosaveTimer: null
 };
 
 const recorder = new AudioRecorder();
@@ -12,12 +15,18 @@ const ui = {
     btnCopy: document.getElementById('btn-copy'),
     btnAppend: document.getElementById('btn-append'),
     btnClear: document.getElementById('btn-clear'),
+    btnDownload: document.getElementById('btn-download'),
 
     // New Refs
     selectTemplate: document.getElementById('template-select'),
     btnRefine: document.getElementById('btn-refine'),
 
     transcript: document.getElementById('transcript'),
+    offlineToggle: document.getElementById('offline-toggle'),
+    autosaveStatus: document.getElementById('autosave-status'),
+    wordCount: document.getElementById('word-count'),
+    charCount: document.getElementById('char-count'),
+    lastSaved: document.getElementById('last-saved'),
     status: document.getElementById('status'),
     apiStatus: document.getElementById('api-status'),
     midiStatus: document.getElementById('midi-status')
@@ -63,7 +72,8 @@ async function stopRecording() {
 
 async function transcribe(audioBlob) {
     const formData = new FormData();
-    formData.append("file", audioBlob, "recording.wav");
+    const extension = getAudioExtension(audioBlob.type);
+    formData.append("file", audioBlob, `recording.${extension}`);
 
     try {
         ui.status.textContent = "Transcribing...";
@@ -84,7 +94,21 @@ async function transcribe(audioBlob) {
     }
 }
 
+function getAudioExtension(mimeType) {
+    if (!mimeType) return "wav";
+
+    if (mimeType.includes("webm")) return "webm";
+    if (mimeType.includes("ogg")) return "ogg";
+    if (mimeType.includes("wav")) return "wav";
+
+    return "wav";
+}
+
 async function appendSession() {
+    if (state.isOffline) {
+        ui.status.textContent = "Offline-only: session append disabled";
+        return;
+    }
     const text = ui.transcript.value;
     if (!text) return;
 
@@ -108,6 +132,10 @@ async function appendSession() {
 }
 
 async function refineText(templateName) {
+    if (state.isOffline) {
+        ui.status.textContent = "Offline-only: refinement disabled";
+        return;
+    }
     const text = ui.transcript.value;
     if (!text) return;
 
@@ -149,13 +177,61 @@ function copyToClipboard() {
     });
 }
 
-function quitApp() {
-    // Since this is a browser app, we can't really "quit" the process
-    // But we can close the window or show a message
-    if (confirm("Close The Dictator?")) {
-        window.close();
-        document.body.innerHTML = "<h1>Application Closed</h1><p>You can close this tab.</p>";
+function updateStats(text) {
+    const trimmed = text.trim();
+    const words = trimmed ? trimmed.split(/\s+/).length : 0;
+    ui.wordCount.textContent = String(words);
+    ui.charCount.textContent = String(text.length);
+}
+
+function setAutosaveStatus(message) {
+    ui.autosaveStatus.textContent = message;
+}
+
+function saveTranscript() {
+    const text = ui.transcript.value;
+    localStorage.setItem(STORAGE_KEY, text);
+    const timestamp = new Date();
+    ui.lastSaved.textContent = timestamp.toLocaleTimeString();
+    setAutosaveStatus("Saved");
+}
+
+function scheduleAutosave() {
+    setAutosaveStatus("Saving...");
+    if (state.autosaveTimer) {
+        clearTimeout(state.autosaveTimer);
     }
+    state.autosaveTimer = setTimeout(() => {
+        saveTranscript();
+        state.autosaveTimer = null;
+    }, 500);
+}
+
+function downloadTranscript() {
+    const text = ui.transcript.value.trim();
+    if (!text) return;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    link.href = url;
+    link.download = `dictator-transcript-${timestamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function updateOfflineMode() {
+    state.isOffline = ui.offlineToggle.checked;
+    ui.btnAppend.disabled = state.isOffline;
+    ui.selectTemplate.disabled = state.isOffline;
+    if (state.isOffline) {
+        ui.btnRefine.disabled = true;
+    } else if (!state.isRecording) {
+        ui.btnRefine.disabled = false;
+    }
+    ui.apiStatus.textContent = state.isOffline ? "API: Local-only" : ui.apiStatus.textContent;
 }
 
 // --- UI Updates ---
@@ -166,13 +242,12 @@ function updateUI() {
         ui.btnRecord.textContent = "Stop Recording (Pad 1)";
         ui.btnStop.disabled = false;
         ui.status.textContent = "Recording...";
-        // Disable refinement while recording
         ui.btnRefine.disabled = true;
     } else {
         ui.btnRecord.classList.remove('recording');
         ui.btnRecord.textContent = "Record (Pad 1)";
         ui.btnStop.disabled = true;
-        ui.btnRefine.disabled = false;
+        ui.btnRefine.disabled = state.isOffline;
     }
 }
 
@@ -187,7 +262,7 @@ async function checkAPI() {
             }
             ui.status.classList.remove('disconnected');
             ui.status.classList.add('connected');
-            ui.apiStatus.textContent = "API: OK";
+            ui.apiStatus.textContent = state.isOffline ? "API: Local-only" : "API: OK";
         } else {
             throw new Error();
         }
@@ -198,24 +273,10 @@ async function checkAPI() {
     }
 }
 
-async function loadConfig() {
-    try {
-        const res = await fetch(`${API_URL}/button_map`);
-        if (res.ok) {
-            const map = await res.json();
-            midiHandler.setMappings(map.midi);
-            hotkeyHandler.setMappings(map.keyboard);
-            ui.apiStatus.textContent += " | Config Loaded";
-        }
-    } catch (err) {
-        console.warn("Failed to load button map:", err);
-    }
-}
-
-// Action Handler
+// MIDI Callback
 function handleAction(action) {
-    console.log("Action Triggered:", action);
-    ui.midiStatus.textContent = `Action: ${action}`;
+    console.log("MIDI Action:", action);
+    ui.midiStatus.textContent = `MIDI Action: ${action}`;
 
     if (action.startsWith("refine:")) {
         const template = action.split(":")[1];
@@ -223,22 +284,9 @@ function handleAction(action) {
         return;
     }
 
-    if (action.startsWith("send_to:")) {
-         const provider = action.split(":")[1];
-         // We reuse refineText but pass provider if we were to support it
-         // For now, let's just do a generic refine which uses default provider
-         // Or strictly speaking, we should have a sendTo function.
-         // But the MVP uses /refine. Let's map it to refine with a template that implies sending
-         // Actually, button_map.toml uses send_to:anthropic
-         // backend.llm.refine_text supports provider.
-         // We need to update refineText to support provider.
-         // For simplicity in this phase, let's treat send_to as refine with default template
-         // or better, implement proper send_to support later.
-         console.warn("send_to action not fully implemented on frontend, using default refinement.");
-         return;
-    }
-
     if (action.startsWith("open_browser:")) {
+        // Just inform user, browser cannot reliably open new tabs from MIDI background event
+        // without user interaction in some contexts, but let's try
         const target = action.split(":")[1];
         const urls = {
             "claude": "https://claude.ai/new",
@@ -255,6 +303,8 @@ function handleAction(action) {
         case "transcribe_copy":
             if (state.isRecording) {
                 stopRecording().then(() => {
+                    // Wait for transcription then copy
+                    // A proper event system would be better here, but polling checks:
                     const checkInterval = setInterval(() => {
                         if (ui.status.textContent === "Transcribed") {
                             copyToClipboard();
@@ -263,10 +313,10 @@ function handleAction(action) {
                     }, 500);
                 });
             } else {
+                // If not recording, just copy what's there
                 copyToClipboard();
             }
             break;
-        case "quit": quitApp(); break;
     }
 }
 
@@ -275,21 +325,45 @@ ui.btnRecord.onclick = toggleRecording;
 ui.btnStop.onclick = stopRecording;
 ui.btnCopy.onclick = copyToClipboard;
 ui.btnAppend.onclick = appendSession;
-ui.btnClear.onclick = () => { ui.transcript.value = ""; };
+ui.btnDownload.onclick = downloadTranscript;
+ui.btnClear.onclick = () => {
+    ui.transcript.value = "";
+    state.transcript = "";
+    updateStats("");
+    saveTranscript();
+    if (!state.isRecording) {
+        ui.status.textContent = "Ready";
+    }
+};
+ui.offlineToggle.onchange = updateOfflineMode;
+ui.transcript.addEventListener("input", () => {
+    const text = ui.transcript.value;
+    state.transcript = text;
+    updateStats(text);
+    scheduleAutosave();
+});
 
 ui.btnRefine.onclick = () => {
     const template = ui.selectTemplate.value;
     refineText(template);
 };
 
-// Start Handlers
+// Start
 const midiHandler = new MIDIHandler(handleAction);
-const hotkeyHandler = new HotkeyHandler(handleAction);
-
 midiHandler.init().then(success => {
     ui.midiStatus.textContent = success ? "MIDI: Active" : "MIDI: Not Available";
 });
-hotkeyHandler.init();
 
-checkAPI().then(loadConfig);
+const savedTranscript = localStorage.getItem(STORAGE_KEY);
+if (savedTranscript) {
+    ui.transcript.value = savedTranscript;
+    state.transcript = savedTranscript;
+    updateStats(savedTranscript);
+    ui.status.textContent = "Session restored";
+} else {
+    updateStats("");
+}
+setAutosaveStatus("Idle");
+updateOfflineMode();
+checkAPI();
 setInterval(checkAPI, 5000);

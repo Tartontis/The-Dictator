@@ -16,8 +16,6 @@ if [ ! -f "config/settings.toml" ]; then
     mkdir -p config
     if [ -f "config/settings.example.toml" ]; then
         cp config/settings.example.toml config/settings.toml
-    elif [ -f "config.example.toml" ]; then
-         cp config.example.toml config/settings.toml
     fi
 fi
 

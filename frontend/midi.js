@@ -2,17 +2,13 @@ class MIDIHandler {
     constructor(actionCallback) {
         this.actionCallback = actionCallback;
         this.access = null;
-        this.mappings = {};
-    }
-
-    setMappings(mappings) {
-        // mappings is object like { "36": "toggle_recording", ... }
-        // Convert keys to integers if they are strings
-        this.mappings = {};
-        for (const [key, value] of Object.entries(mappings || {})) {
-            this.mappings[parseInt(key)] = value;
-        }
-        console.log("MIDI mappings loaded:", this.mappings);
+        // Default mappings (should match button_map.toml)
+        this.mappings = {
+            36: "toggle_recording",
+            37: "transcribe_copy",
+            38: "copy",
+            39: "append_session"
+        };
     }
 
     async init() {
@@ -45,12 +41,12 @@ class MIDIHandler {
     handleMessage(message) {
         const [command, note, velocity] = message.data;
         // Note On is typically 144 (0x90) for channel 1
+        // Some controllers might use different channels
+        // 0x90 to 0x9F are Note On for channels 1-16
         if ((command & 0xF0) === 0x90 && velocity > 0) {
             const action = this.mappings[note];
             if (action) {
                 this.actionCallback(action);
-            } else {
-                console.log(`Unmapped MIDI Note: ${note}`);
             }
         }
     }
