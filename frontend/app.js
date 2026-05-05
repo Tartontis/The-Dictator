@@ -178,8 +178,17 @@ function copyToClipboard() {
 }
 
 function updateStats(text) {
-    const trimmed = text.trim();
-    const words = trimmed ? trimmed.split(/\s+/).length : 0;
+    let words = 0;
+    let inWord = false;
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\v' || c === '\f') {
+            inWord = false;
+        } else if (!inWord) {
+            words++;
+            inWord = true;
+        }
+    }
     ui.wordCount.textContent = String(words);
     ui.charCount.textContent = String(text.length);
 }
