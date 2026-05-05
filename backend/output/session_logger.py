@@ -24,7 +24,7 @@ class SessionLogger:
         entry = f"\n### {timestamp}\n{text}\n" if timestamp else f"\n{text}\n"
 
         # Combine header writing and entry appending into a single open operation.
-        # Use a+ to check if the file is empty (f.tell() == 0) and append.
+        # Check if the file is empty (f.tell() == 0) and write header if needed.
         with open(filepath, "a", encoding="utf-8") as f:
             if f.tell() == 0:
                 f.write(f"# Session Log: {now.strftime('%Y-%m-%d')}\n")
