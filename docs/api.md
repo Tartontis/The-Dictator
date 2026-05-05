@@ -11,6 +11,16 @@ http://127.0.0.1:8765
 http://127.0.0.1:8765/api
 ```
 
+## Authentication (Optional)
+
+If `api_key` is configured in `settings.toml`, all requests (except `/health`) must include the following header:
+
+```
+X-API-Key: your-secret-key
+```
+
+If no `api_key` is set (default), authentication is disabled.
+
 ---
 
 ## Endpoints
