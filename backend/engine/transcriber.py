@@ -54,5 +54,5 @@ class Transcriber:
 
         logger.info(f"Detected language '{info.language}' with probability {info.language_probability}")
 
-        text = " ".join([segment.text for segment in segments])
+        text = " ".join(segment.text for segment in segments)
         return text.strip()
