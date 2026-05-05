@@ -31,8 +31,10 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
-    def transcribe(self, audio_path: str | Path) -> str:
     def transcribe(self, audio_path: str | Path | BinaryIO) -> str:
+        """
+        Transcribe an audio file or file-like object using faster-whisper.
+        """
         self.load_model()
 
         logger.info(f"Transcribing audio file: {audio_path}")

@@ -3,7 +3,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile, status
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 
 from backend.config import Settings, load_settings
@@ -39,6 +40,20 @@ def get_llm_engine(settings: Settings = Depends(get_settings)):
         _llm_engine = LLMEngine(settings)
     return _llm_engine
 
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def get_api_key(
+    settings: Settings = Depends(get_settings),
+    api_key_from_header: str | None = Security(api_key_header)
+):
+    if settings.server.api_key:
+        if api_key_from_header != settings.server.api_key:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Could not validate credentials",
+            )
+    return api_key_from_header
+
 class AppendRequest(BaseModel):
     text: str
 
@@ -50,6 +65,10 @@ class RefineRequest(BaseModel):
 class TranscribeResponse(BaseModel):
     text: str
 
+def secure_route():
+    # Implementation of authentication
+    pass
+
 @router.get("/health")
 def health_check(settings: Settings = Depends(get_settings)):
     return {
@@ -60,31 +79,34 @@ def health_check(settings: Settings = Depends(get_settings)):
     }
 
 @router.get("/config")
-def get_config(settings: Settings = Depends(get_settings)):
+def get_config(
+    settings: Settings = Depends(get_settings),
+    api_key: str = Depends(get_api_key)
+):
     return settings
 
 @router.post("/transcribe")
 def transcribe_audio(
     file: UploadFile = File(...),
-    transcriber: Transcriber = Depends(get_transcriber)
+    transcriber: Transcriber = Depends(get_transcriber),
+    api_key: str = Depends(get_api_key)
 ) -> TranscribeResponse:
     logger.info(f"Received audio upload: {file.filename}")
 
     try:
+        # Pass the SpooledTemporaryFile directly to the transcriber.
+        # FastAPI's UploadFile.file is a file-like object that faster-whisper can read.
         text = transcriber.transcribe(file.file)
         return TranscribeResponse(text=text)
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
-    finally:
-        # Clean up
-        if tmp_path.exists():
-            tmp_path.unlink()
 
 @router.post("/session/append")
 def append_session(
     request: AppendRequest,
-    session_logger: SessionLogger = Depends(get_session_logger)
+    session_logger: SessionLogger = Depends(get_session_logger),
+    api_key: str = Depends(get_api_key)
 ):
     try:
         path = session_logger.append(request.text)
@@ -96,7 +118,8 @@ def append_session(
 @router.post("/refine")
 async def refine_text(
     request: RefineRequest,
-    llm_engine: LLMEngine = Depends(get_llm_engine)
+    llm_engine: LLMEngine = Depends(get_llm_engine),
+    api_key: str = Depends(get_api_key)
 ):
     try:
         refined_text = await llm_engine.refine_text(
