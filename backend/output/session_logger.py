@@ -19,16 +19,15 @@ class SessionLogger:
 
     def append(self, text: str) -> Path:
         filepath = self.get_session_file()
-        timestamp = datetime.now().strftime("%H:%M:%S") if self.include_timestamps else ""
-
-        # If file doesn't exist, start with a header
-        if not filepath.exists():
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(f"# Session Log: {datetime.now().strftime('%Y-%m-%d')}\n")
-
+        now = datetime.now()
+        timestamp = now.strftime("%H:%M:%S") if self.include_timestamps else ""
         entry = f"\n### {timestamp}\n{text}\n" if timestamp else f"\n{text}\n"
 
+        # Combine header writing and entry appending into a single open operation.
+        # Use a+ to check if the file is empty (f.tell() == 0) and append.
         with open(filepath, "a", encoding="utf-8") as f:
+            if f.tell() == 0:
+                f.write(f"# Session Log: {now.strftime('%Y-%m-%d')}\n")
             f.write(entry)
 
         return filepath
