@@ -47,6 +47,7 @@ This document describes The-Dictator's system architecture, design decisions, an
 └─────────────────────────────────────────────┼───────────────────────┘
                                               │
                               HTTP POST /transcribe (multipart audio)
+                              HTTP POST /api/transcribe (multipart audio)
                               WebSocket /ws (future: streaming)
                                               │
 ┌─────────────────────────────────────────────┼───────────────────────┐
@@ -63,6 +64,11 @@ This document describes The-Dictator's system architecture, design decisions, an
 │  │  │  POST /session/append - Append to session markdown       │ │   │
 │  │  │  GET  /health         - Healthcheck                      │ │   │
 │  │  │  GET  /config         - Return current config            │ │   │
+│  │  │  POST /api/transcribe     - Accept audio, return text        │ │   │
+│  │  │  POST /api/refine         - Send text to LLM, return refined │ │   │
+│  │  │  POST /api/session/append - Append to session markdown       │ │   │
+│  │  │  GET  /api/health         - Healthcheck                      │ │   │
+│  │  │  GET  /api/config         - Return current config            │ │   │
 │  │  │  WS   /ws             - (future) streaming audio         │ │   │
 │  │  │                                                          │ │   │
 │  │  └──────────────────────────┬──────────────────────────────┘ │   │
@@ -158,12 +164,14 @@ This document describes The-Dictator's system architecture, design decisions, an
 4. User presses pad again (or clicks Stop)
 5. Frontend stops MediaRecorder, gets audio Blob
 6. Frontend POSTs audio to backend /transcribe
+6. Frontend POSTs audio to backend /api/transcribe
 7. Backend runs ffmpeg normalization
 8. Backend runs faster-whisper
 9. Backend returns { "text": "transcribed text" }
 10. Frontend displays in transcript panel
 11. User clicks Copy → clipboard
 12. User clicks Append → POST /session/append
+12. User clicks Append → POST /api/session/append
 ```
 
 ### LLM Refinement
@@ -172,6 +180,7 @@ This document describes The-Dictator's system architecture, design decisions, an
 1. User has transcription in panel
 2. User presses "Refine" MIDI pad
 3. Frontend POSTs to /refine with text + template name
+3. Frontend POSTs to /api/refine with text + template name
 4. Backend loads prompt template
 5. Backend calls LLM API (or HiveCluster)
 6. Backend returns refined text

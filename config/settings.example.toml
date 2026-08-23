@@ -7,6 +7,7 @@
 [server]
 host = "127.0.0.1"      # Only listen on localhost
 port = 8765             # Backend API port
+reload = false          # Enable uvicorn auto-reload (development only)
 
 # =============================================================================
 # Audio Settings
@@ -72,7 +73,9 @@ include_timestamps = true
 # =============================================================================
 [llm]
 # Default provider when not specified in request
-default_provider = "anthropic"
+# Use "ollama" for permission-free local operation (no API key needed)
+# Use "anthropic" or "openai" for cloud LLM (requires API key)
+default_provider = "ollama"
 
 # Anthropic (Claude)
 # Set ANTHROPIC_API_KEY environment variable

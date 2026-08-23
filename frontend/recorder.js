@@ -2,11 +2,14 @@ class AudioRecorder {
     constructor() {
         this.mediaRecorder = null;
         this.audioChunks = [];
+        this.mimeType = "";
     }
 
     async start() {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        this.mediaRecorder = new MediaRecorder(stream);
+        this.mimeType = this.#pickMimeType();
+        const options = this.mimeType ? { mimeType: this.mimeType } : undefined;
+        this.mediaRecorder = new MediaRecorder(stream, options);
         this.audioChunks = [];
 
         this.mediaRecorder.ondataavailable = (event) => {
@@ -24,7 +27,7 @@ class AudioRecorder {
             }
 
             this.mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                const audioBlob = new Blob(this.audioChunks, { type: this.mimeType || undefined });
                 resolve(audioBlob);
 
                 // Stop all tracks to release microphone
@@ -32,5 +35,20 @@ class AudioRecorder {
             };
             this.mediaRecorder.stop();
         });
+    }
+
+    #pickMimeType() {
+        if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+            return "";
+        }
+
+        const candidates = [
+            "audio/webm;codecs=opus",
+            "audio/webm",
+            "audio/ogg;codecs=opus",
+            "audio/ogg"
+        ];
+
+        return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
     }
 }

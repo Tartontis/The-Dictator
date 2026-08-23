@@ -205,6 +205,7 @@ chore: update dependencies
 ### Do
 
 - ✅ Use `config.example.toml` as reference
+- ✅ Use `config/settings.example.toml` as reference
 - ✅ Use environment variables for secrets
 - ✅ Keep the MVP boring and working
 - ✅ Ask if you're unsure about architecture
@@ -238,6 +239,7 @@ The-Dictator/
 - `docs/api.md` — API contract
 - `docs/architecture.md` — System design
 - `config.example.toml` — Config template
+- `config/settings.example.toml` — Config template
 - `backend/main.py` — Entry point
 
 ### Commands

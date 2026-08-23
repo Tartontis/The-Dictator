@@ -38,7 +38,7 @@ pip install -e ".[dev]"
 ./scripts/download_model.sh small
 
 # Copy example config
-cp config.example.toml config/settings.toml
+cp config/settings.example.toml config/settings.toml
 
 # Start the dev server
 ./scripts/dev.sh
