@@ -3,7 +3,8 @@ import logging
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from backend.config import Settings, load_settings
+from backend.api.auth import verify_api_key, get_settings
+from backend.config import Settings
 from backend.engine import LLMEngine, Transcriber
 from backend.output import SessionLogger
 
@@ -14,9 +15,6 @@ logger = logging.getLogger(__name__)
 _transcriber = None
 _session_logger = None
 _llm_engine = None
-
-def get_settings():
-    return load_settings()
 
 def get_transcriber(settings: Settings = Depends(get_settings)):
     global _transcriber
@@ -57,13 +55,17 @@ def health_check(settings: Settings = Depends(get_settings)):
     }
 
 @router.get("/config")
-def get_config(settings: Settings = Depends(get_settings)):
+def get_config(
+    settings: Settings = Depends(get_settings),
+    _ = Depends(verify_api_key)
+):
     return settings
 
 @router.post("/transcribe")
 def transcribe_audio(
     file: UploadFile = File(...),
-    transcriber: Transcriber = Depends(get_transcriber)
+    transcriber: Transcriber = Depends(get_transcriber),
+    _ = Depends(verify_api_key)
 ) -> TranscribeResponse:
     logger.info(f"Received audio upload: {file.filename}")
 
@@ -77,7 +79,8 @@ def transcribe_audio(
 @router.post("/session/append")
 def append_session(
     request: AppendRequest,
-    session_logger: SessionLogger = Depends(get_session_logger)
+    session_logger: SessionLogger = Depends(get_session_logger),
+    _ = Depends(verify_api_key)
 ):
     try:
         path = session_logger.append(request.text)
@@ -89,7 +92,8 @@ def append_session(
 @router.post("/refine")
 async def refine_text(
     request: RefineRequest,
-    llm_engine: LLMEngine = Depends(get_llm_engine)
+    llm_engine: LLMEngine = Depends(get_llm_engine),
+    _ = Depends(verify_api_key)
 ):
     try:
         refined_text = await llm_engine.refine_text(
