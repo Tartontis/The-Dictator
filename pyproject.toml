@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "the-dictator"
-version = "0.1.0"
+version = "0.0.1"
 description = "Local-first voice dictation with MIDI control and LLM refinement"
 readme = "README.md"
 license = "MIT"
@@ -58,6 +58,7 @@ dependencies = [
     
     # Utilities
     "jinja2>=3.1.0",
+    "textual>=0.50.0",
 ]
 
 [project.optional-dependencies]
@@ -82,10 +83,10 @@ vad = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/The-Dictator"
-Documentation = "https://github.com/yourusername/The-Dictator/tree/main/docs"
-Repository = "https://github.com/yourusername/The-Dictator"
-Issues = "https://github.com/yourusername/The-Dictator/issues"
+Homepage = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential"
+Documentation = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential/tree/main/docs"
+Repository = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential"
+Issues = "https://github.com/ewhhansen-dev/The-Dictator-offline_Essential/issues"
 
 [project.scripts]
 the-dictator = "backend.main:cli"
@@ -96,12 +97,13 @@ packages = ["backend"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/backend",
+    "/config",
     "/frontend",
     "/docs",
     "/prompts",
     "/scripts",
-    "/config.example.toml",
-    "/button_map.example.toml",
+    "/config/settings.example.toml",
+    "/config/button_map.example.toml",
 ]
 
 # =============================================================================

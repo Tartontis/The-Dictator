@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Literal, Optional
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel
+
 
 class ServerConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8765
+    reload: bool = False
 
 class AudioConfig(BaseModel):
     sample_rate: int = 16000
@@ -41,10 +44,10 @@ class OllamaConfig(BaseModel):
     model: str = "llama3.2"
 
 class LLMConfig(BaseModel):
-    default_provider: Literal["anthropic", "openai", "ollama"] = "anthropic"
-    anthropic: Optional[AnthropicConfig] = None
-    openai: Optional[OpenAIConfig] = None
-    ollama: Optional[OllamaConfig] = None
+    default_provider: Literal["anthropic", "openai", "ollama"] = "ollama"
+    anthropic: AnthropicConfig | None = None
+    openai: OpenAIConfig | None = None
+    ollama: OllamaConfig | None = None
 
 class ClusterConfig(BaseModel):
     enabled: bool = False
