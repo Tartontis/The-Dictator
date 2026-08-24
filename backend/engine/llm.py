@@ -1,7 +1,10 @@
+import asyncio
 import logging
 import os
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+from backend.config import Settings
 
 # Import clients conditionally to avoid hard dependencies if not used
 try:
@@ -14,7 +17,6 @@ try:
 except ImportError:
     AsyncOpenAI = None
 
-from backend.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +88,7 @@ class LLMEngine:
         Refine text using an LLM and a prompt template.
         """
         # Render prompt
-        prompt = self.render_template(template_name, text=text)
+        prompt = await asyncio.to_thread(self.render_template, template_name, text=text)
 
         # Determine provider
         if not provider:
