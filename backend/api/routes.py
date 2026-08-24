@@ -1,7 +1,4 @@
 import logging
-import shutil
-import tempfile
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile, status
 from fastapi.security import APIKeyHeader
@@ -46,12 +43,11 @@ def get_api_key(
     settings: Settings = Depends(get_settings),
     api_key_from_header: str | None = Security(api_key_header)
 ):
-    if settings.server.api_key:
-        if api_key_from_header != settings.server.api_key:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Could not validate credentials",
-            )
+    if settings.server.api_key and api_key_from_header != settings.server.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
     return api_key_from_header
 
 class AppendRequest(BaseModel):
@@ -81,7 +77,7 @@ def health_check(settings: Settings = Depends(get_settings)):
 @router.get("/config")
 def get_config(
     settings: Settings = Depends(get_settings),
-    api_key: str = Depends(get_api_key)
+    _api_key: str = Depends(get_api_key)
 ):
     return settings
 
@@ -89,7 +85,7 @@ def get_config(
 def transcribe_audio(
     file: UploadFile = File(...),
     transcriber: Transcriber = Depends(get_transcriber),
-    api_key: str = Depends(get_api_key)
+    _api_key: str = Depends(get_api_key)
 ) -> TranscribeResponse:
     logger.info(f"Received audio upload: {file.filename}")
 
@@ -106,7 +102,7 @@ def transcribe_audio(
 def append_session(
     request: AppendRequest,
     session_logger: SessionLogger = Depends(get_session_logger),
-    api_key: str = Depends(get_api_key)
+    _api_key: str = Depends(get_api_key)
 ):
     try:
         path = session_logger.append(request.text)
@@ -119,7 +115,7 @@ def append_session(
 async def refine_text(
     request: RefineRequest,
     llm_engine: LLMEngine = Depends(get_llm_engine),
-    api_key: str = Depends(get_api_key)
+    _api_key: str = Depends(get_api_key)
 ):
     try:
         refined_text = await llm_engine.refine_text(

@@ -18,11 +18,22 @@ def test_main_app_import():
 
 def test_auth_no_key_configured():
     """Verify API works without auth when no key is configured."""
-    from fastapi.testclient import TestClient
-    from backend.main import app
-    from backend.api.routes import get_settings
-    from backend.config import Settings, ServerConfig, AudioConfig, TranscriptionConfig, VadConfig, SessionConfig, LLMConfig, ClusterConfig, TemplatesConfig
     from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from backend.api.routes import get_settings
+    from backend.config import (
+        AudioConfig,
+        ClusterConfig,
+        LLMConfig,
+        ServerConfig,
+        SessionConfig,
+        Settings,
+        TemplatesConfig,
+        TranscriptionConfig,
+    )
+    from backend.main import app
 
     # Mock settings with no api_key
     mock_settings = Settings(
@@ -50,11 +61,22 @@ def test_auth_no_key_configured():
 
 def test_auth_key_configured_success():
     """Verify API works with correct key when configured."""
-    from fastapi.testclient import TestClient
-    from backend.main import app
-    from backend.api.routes import get_settings
-    from backend.config import Settings, ServerConfig, AudioConfig, TranscriptionConfig, VadConfig, SessionConfig, LLMConfig, ClusterConfig, TemplatesConfig
     from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from backend.api.routes import get_settings
+    from backend.config import (
+        AudioConfig,
+        ClusterConfig,
+        LLMConfig,
+        ServerConfig,
+        SessionConfig,
+        Settings,
+        TemplatesConfig,
+        TranscriptionConfig,
+    )
+    from backend.main import app
 
     # Mock settings with api_key
     mock_settings = Settings(
@@ -84,11 +106,22 @@ def test_auth_key_configured_success():
 
 def test_auth_key_configured_failure():
     """Verify API rejects requests with wrong or missing key when configured."""
-    from fastapi.testclient import TestClient
-    from backend.main import app
-    from backend.api.routes import get_settings
-    from backend.config import Settings, ServerConfig, AudioConfig, TranscriptionConfig, VadConfig, SessionConfig, LLMConfig, ClusterConfig, TemplatesConfig
     from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from backend.api.routes import get_settings
+    from backend.config import (
+        AudioConfig,
+        ClusterConfig,
+        LLMConfig,
+        ServerConfig,
+        SessionConfig,
+        Settings,
+        TemplatesConfig,
+        TranscriptionConfig,
+    )
+    from backend.main import app
 
     # Mock settings with api_key
     mock_settings = Settings(
