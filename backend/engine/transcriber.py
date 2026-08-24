@@ -31,7 +31,6 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
-    def transcribe(self, audio_path: str | Path) -> str:
     def transcribe(self, audio_path: str | Path | BinaryIO) -> str:
         self.load_model()
 
@@ -55,5 +54,5 @@ class Transcriber:
 
         logger.info(f"Detected language '{info.language}' with probability {info.language_probability}")
 
-        text = " ".join([segment.text for segment in segments])
+        text = " ".join(segment.text for segment in segments)
         return text.strip()
