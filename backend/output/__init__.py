@@ -1,4 +1,3 @@
-from .gui import VoxPadApp
 from .session_logger import SessionLogger
 
-__all__ = ["SessionLogger", "VoxPadApp"]
+__all__ = ["SessionLogger"]

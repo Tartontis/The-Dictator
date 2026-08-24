@@ -1,4 +1,5 @@
 import logging
+
 import shutil
 import tempfile
 from pathlib import Path
@@ -6,8 +7,9 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from backend.config import Settings, load_settings
-from backend.engine import LLMEngine, Transcriber
+from backend.api.auth import verify_api_key, get_settings
+from backend.config import Settings
+from backend.engine import LLMEngine, Transcriber, Normalizer
 from backend.output import SessionLogger
 
 router = APIRouter()
@@ -17,9 +19,14 @@ logger = logging.getLogger(__name__)
 _transcriber = None
 _session_logger = None
 _llm_engine = None
+_normalizer = None
 
-def get_settings():
-    return load_settings()
+def get_normalizer(settings: Settings = Depends(get_settings)):
+    global _normalizer
+    if _normalizer is None:
+        _normalizer = Normalizer(settings)
+    return _normalizer
+
 
 def get_transcriber(settings: Settings = Depends(get_settings)):
     global _transcriber
@@ -60,41 +67,58 @@ def health_check(settings: Settings = Depends(get_settings)):
     }
 
 @router.get("/config")
-def get_config(settings: Settings = Depends(get_settings)):
+def get_config(
+    settings: Settings = Depends(get_settings),
+    _ = Depends(verify_api_key)
+):
     return settings
+
+@router.get("/button_map")
+def get_button_map():
+    from backend.config import load_button_map
+    return load_button_map()
 
 @router.post("/transcribe")
 def transcribe_audio(
     file: UploadFile = File(...),
-    transcriber: Transcriber = Depends(get_transcriber)
+    transcriber: Transcriber = Depends(get_transcriber),
+    normalizer: Normalizer = Depends(get_normalizer),
+    _ = Depends(verify_api_key)
 ) -> TranscribeResponse:
     logger.info(f"Received audio upload: {file.filename}")
 
-    # Save upload to temp file
     # Ensure we keep the extension so ffmpeg/whisper knows format
-    suffix = Path(file.filename).suffix
+    suffix = Path(file.filename).suffix if file.filename else ".wav"
     if not suffix:
-        suffix = ".wav" # Default to wav if unknown
+        suffix = ".wav"
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         shutil.copyfileobj(file.file, tmp)
         tmp_path = Path(tmp.name)
 
+    files_to_clean = [tmp_path]
+
     try:
-        text = transcriber.transcribe(tmp_path)
+        # Normalize
+        norm_path = normalizer.normalize(tmp_path)
+        if norm_path != tmp_path:
+            files_to_clean.append(norm_path)
+
+        text = transcriber.transcribe(norm_path)
         return TranscribeResponse(text=text)
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
-        # Clean up
-        if tmp_path.exists():
-            tmp_path.unlink()
+        for p in files_to_clean:
+            if p.exists():
+                p.unlink()
 
 @router.post("/session/append")
 def append_session(
     request: AppendRequest,
-    session_logger: SessionLogger = Depends(get_session_logger)
+    session_logger: SessionLogger = Depends(get_session_logger),
+    _ = Depends(verify_api_key)
 ):
     try:
         path = session_logger.append(request.text)
@@ -106,7 +130,8 @@ def append_session(
 @router.post("/refine")
 async def refine_text(
     request: RefineRequest,
-    llm_engine: LLMEngine = Depends(get_llm_engine)
+    llm_engine: LLMEngine = Depends(get_llm_engine),
+    _ = Depends(verify_api_key)
 ):
     try:
         refined_text = await llm_engine.refine_text(
