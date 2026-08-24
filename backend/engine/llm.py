@@ -84,6 +84,7 @@ class LLMEngine:
             raise FileNotFoundError(
                 f"Template '{template_name}' not found in {self.templates_dir}"
             ) from e
+            raise FileNotFoundError(f"Template '{template_name}' not found in {self.templates_dir}") from e
 
     async def refine_text(self, text: str, template_name: str, provider: str | None = None) -> str:
         """
