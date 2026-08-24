@@ -1,7 +1,4 @@
 import logging
-import shutil
-import tempfile
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -76,10 +73,6 @@ def transcribe_audio(
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
-    finally:
-        # Clean up
-        if tmp_path.exists():
-            tmp_path.unlink()
 
 @router.post("/session/append")
 def append_session(
