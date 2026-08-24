@@ -58,6 +58,7 @@ dependencies = [
     
     # Utilities
     "jinja2>=3.1.0",
+    "textual>=0.50.0",
 ]
 
 [project.optional-dependencies]
