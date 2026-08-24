@@ -271,7 +271,7 @@ async function checkAPI() {
             }
             ui.status.classList.remove('disconnected');
             ui.status.classList.add('connected');
-            ui.apiStatus.textContent = state.isOffline ? "API: Local-only" : "API: OK";
+            ui.apiStatus.textContent = "API: OK";
         } else {
             throw new Error();
         }
@@ -282,10 +282,23 @@ async function checkAPI() {
     }
 }
 
-// MIDI Callback
+async function loadConfig() {
+    try {
+        const res = await fetch(`${API_URL}/button_map`);
+        if (res.ok) {
+            const map = await res.json();
+            midiHandler.setMappings(map.midi);
+            hotkeyHandler.setMappings(map.keyboard);
+            ui.apiStatus.textContent += " | Config Loaded";
+        }
+    } catch (err) {
+        console.warn("Failed to load button map:", err);
+    }
+}
+
 function handleAction(action) {
-    console.log("MIDI Action:", action);
-    ui.midiStatus.textContent = `MIDI Action: ${action}`;
+    console.log("Action Triggered:", action);
+    ui.midiStatus.textContent = `Action: ${action}`;
 
     if (action.startsWith("refine:")) {
         const template = action.split(":")[1];
@@ -293,13 +306,19 @@ function handleAction(action) {
         return;
     }
 
+    if (action.startsWith("send_to:")) {
+         const provider = action.split(":")[1];
+         console.warn("send_to action not fully implemented on frontend, using default refinement.");
+         return;
+    }
+
     if (action.startsWith("open_browser:")) {
-        // Just inform user, browser cannot reliably open new tabs from MIDI background event
-        // without user interaction in some contexts, but let's try
         const target = action.split(":")[1];
         const urls = {
             "claude": "https://claude.ai/new",
-            "chatgpt": "https://chat.openai.com"
+            "chatgpt": "https://chat.openai.com",
+            "perplexity": "https://perplexity.ai",
+            "gemini": "https://gemini.google.com"
         };
         if (urls[target]) window.open(urls[target], "_blank");
         return;
@@ -312,8 +331,6 @@ function handleAction(action) {
         case "transcribe_copy":
             if (state.isRecording) {
                 stopRecording().then(() => {
-                    // Wait for transcription then copy
-                    // A proper event system would be better here, but polling checks:
                     const checkInterval = setInterval(() => {
                         if (ui.status.textContent === "Transcribed") {
                             copyToClipboard();
@@ -322,10 +339,17 @@ function handleAction(action) {
                     }, 500);
                 });
             } else {
-                // If not recording, just copy what's there
                 copyToClipboard();
             }
             break;
+        case "quit": quitApp(); break;
+    }
+}
+
+function quitApp() {
+    if (confirm("Close The Dictator?")) {
+        window.close();
+        document.body.innerHTML = "<h1>Application Closed</h1><p>You can close this tab.</p>";
     }
 }
 
@@ -359,9 +383,12 @@ ui.btnRefine.onclick = () => {
 
 // Start
 const midiHandler = new MIDIHandler(handleAction);
+const hotkeyHandler = new HotkeyHandler(handleAction);
+
 midiHandler.init().then(success => {
     ui.midiStatus.textContent = success ? "MIDI: Active" : "MIDI: Not Available";
 });
+hotkeyHandler.init();
 
 const savedTranscript = localStorage.getItem(STORAGE_KEY);
 if (savedTranscript) {
@@ -374,5 +401,5 @@ if (savedTranscript) {
 }
 setAutosaveStatus("Idle");
 updateOfflineMode();
-checkAPI();
+checkAPI().then(loadConfig);
 setInterval(checkAPI, 5000);
