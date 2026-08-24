@@ -7,6 +7,8 @@ from pydantic import BaseModel
 class ServerConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8765
+    reload: bool = False
+    api_key: str | None = None
 
 class AudioConfig(BaseModel):
     sample_rate: int = 16000

@@ -48,7 +48,7 @@ def cli():
         "backend.main:app",
         host=settings.server.host,
         port=settings.server.port,
-        reload=True
+        reload=settings.server.reload
     )
 
 if __name__ == "__main__":

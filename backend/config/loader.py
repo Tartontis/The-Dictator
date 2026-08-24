@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 
 try:
@@ -13,6 +14,7 @@ DEFAULT_CONFIG_PATHS = [
     Path("config.example.toml"),
 ]
 
+@lru_cache(maxsize=1)
 def load_settings() -> Settings:
     config_file = CONFIG_PATH
     if not config_file.exists():
@@ -30,3 +32,22 @@ def load_settings() -> Settings:
         config_data = tomllib.load(f)
 
     return Settings(**config_data)
+
+from typing import Dict, Any
+
+BUTTON_MAP_PATH = Path("config/button_map.toml")
+DEFAULT_BUTTON_MAP_PATH = Path("config/button_map.example.toml")
+
+def load_button_map() -> Dict[str, Any]:
+    config_file = BUTTON_MAP_PATH
+    if not config_file.exists():
+        if DEFAULT_BUTTON_MAP_PATH.exists():
+            config_file = DEFAULT_BUTTON_MAP_PATH
+        else:
+            return {"midi": {}, "keyboard": {}}
+
+    try:
+        with open(config_file, "rb") as f:
+            return tomllib.load(f)
+    except FileNotFoundError:
+        return {"midi": {}, "keyboard": {}}

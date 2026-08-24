@@ -1,18 +1,20 @@
 import logging
 from pathlib import Path
+from typing import BinaryIO
+
+from backend.config.models import Settings
 
 try:
     from faster_whisper import WhisperModel
 except ImportError:
     WhisperModel = None
 
-from backend.config import Settings
-
 logger = logging.getLogger(__name__)
 
 class Transcriber:
     def __init__(self, settings: Settings):
         self.settings = settings.transcription
+        self.vad_settings = settings.vad
         self.model = None
 
     def load_model(self):
@@ -22,7 +24,6 @@ class Transcriber:
         if self.model is None:
             logger.info(f"Loading Whisper model: {self.settings.model} on {self.settings.device}")
             # Initialize the model
-            # Note: download_root can be configured if needed, defaults to cache
             self.model = WhisperModel(
                 self.settings.model,
                 device=self.settings.device,
@@ -30,24 +31,35 @@ class Transcriber:
             )
             logger.info("Model loaded")
 
-    def transcribe(self, audio_path: str | Path) -> str:
+    def transcribe(self, audio_path: str | Path | BinaryIO) -> str:
         self.load_model()
 
         logger.info(f"Transcribing audio file: {audio_path}")
 
-        # language=None means auto-detect if set to "auto" in config,
-        # but faster-whisper expects None for auto, or a code string.
         lang = self.settings.language
         if lang == "auto":
             lang = None
 
+        audio_input = str(audio_path) if isinstance(audio_path, Path) else audio_path
+
+        vad_filter = self.vad_settings.enabled
+        vad_parameters = None
+        if vad_filter:
+            vad_parameters = {
+                "threshold": self.vad_settings.threshold,
+                "min_speech_duration_ms": int(self.vad_settings.min_speech_duration * 1000),
+                "min_silence_duration_ms": int(self.vad_settings.min_silence_duration * 1000),
+            }
+
         segments, info = self.model.transcribe(
-            str(audio_path),
+            audio_input,
             language=lang,
-            beam_size=5
+            beam_size=5,
+            vad_filter=vad_filter,
+            vad_parameters=vad_parameters
         )
 
         logger.info(f"Detected language '{info.language}' with probability {info.language_probability}")
 
-        text = " ".join([segment.text for segment in segments])
+        text = " ".join(segment.text for segment in segments)
         return text.strip()
