@@ -64,8 +64,44 @@
                 </div>
             </div>
 
+            <section class="hotkeys-panel">
+                <div class="panel-header">
+                    <h3>Hotkeys & Macro Pad Customization</h3>
+                    <button id="btn-toggle-shortcuts" class="btn btn-secondary btn-sm">Configure Shortcuts</button>
+                </div>
+                <div id="shortcuts-config" class="shortcuts-config hidden">
+                    <p class="config-desc">Click a action's key shortcut badge to assign a new hotkey or macro pad key.</p>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <span>Toggle Recording</span>
+                            <input type="text" class="key-binding-input" data-action="toggle_recording" value="Space" readonly>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>Copy Transcript</span>
+                            <input type="text" class="key-binding-input" data-action="copy" value="Control+Shift+C" readonly>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>Append to Session</span>
+                            <input type="text" class="key-binding-input" data-action="append_session" value="Control+Shift+A" readonly>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>Refine Text</span>
+                            <input type="text" class="key-binding-input" data-action="refine_selected" value="Control+Shift+R" readonly>
+                        </div>
+                        <div class="shortcut-item">
+                            <span>Clear Transcript</span>
+                            <input type="text" class="key-binding-input" data-action="clear" value="Control+Shift+X" readonly>
+                        </div>
+                    </div>
+                    <div class="config-actions">
+                        <button id="btn-reset-shortcuts" class="btn btn-secondary btn-sm">Reset to Defaults</button>
+                    </div>
+                </div>
+            </section>
+
             <div id="info-panel">
                  <div id="midi-status">MIDI: Initializing...</div>
+                 <div id="hotkey-status">Hotkeys: Active</div>
                  <div id="api-status">API: Checking...</div>
             </div>
         </main>

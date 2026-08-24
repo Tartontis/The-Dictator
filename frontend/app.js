@@ -1,11 +1,22 @@
 const API_URL = "http://localhost:8765/api";
 const STORAGE_KEY = "dictator.offline.transcript";
+const SHORTCUTS_STORAGE_KEY = "dictator.offline.shortcuts";
+
+const DEFAULT_KEYBINDINGS = {
+    toggle_recording: "Space",
+    copy: "Control+Shift+C",
+    append_session: "Control+Shift+A",
+    refine_selected: "Control+Shift+R",
+    clear: "Control+Shift+X"
+};
 
 const state = {
     isRecording: false,
     isOffline: true,
     transcript: "",
-    autosaveTimer: null
+    autosaveTimer: null,
+    keybindings: { ...DEFAULT_KEYBINDINGS },
+    listeningForBinding: null
 };
 
 const recorder = new AudioRecorder();
@@ -29,7 +40,14 @@ const ui = {
     lastSaved: document.getElementById('last-saved'),
     status: document.getElementById('status'),
     apiStatus: document.getElementById('api-status'),
-    midiStatus: document.getElementById('midi-status')
+    midiStatus: document.getElementById('midi-status'),
+    hotkeyStatus: document.getElementById('hotkey-status'),
+
+    // Shortcuts Controls
+    btnToggleShortcuts: document.getElementById('btn-toggle-shortcuts'),
+    shortcutsConfig: document.getElementById('shortcuts-config'),
+    btnResetShortcuts: document.getElementById('btn-reset-shortcuts'),
+    keyInputs: document.querySelectorAll('.key-binding-input')
 };
 
 // --- Actions ---
@@ -300,11 +318,19 @@ function handleAction(action) {
         case "toggle_recording": toggleRecording(); break;
         case "copy": copyToClipboard(); break;
         case "append_session": appendSession(); break;
+        case "refine_selected":
+            refineText(ui.selectTemplate.value);
+            break;
+        case "clear":
+            ui.transcript.value = "";
+            state.transcript = "";
+            updateStats("");
+            saveTranscript();
+            if (!state.isRecording) ui.status.textContent = "Ready";
+            break;
         case "transcribe_copy":
             if (state.isRecording) {
                 stopRecording().then(() => {
-                    // Wait for transcription then copy
-                    // A proper event system would be better here, but polling checks:
                     const checkInterval = setInterval(() => {
                         if (ui.status.textContent === "Transcribed") {
                             copyToClipboard();
@@ -313,10 +339,84 @@ function handleAction(action) {
                     }, 500);
                 });
             } else {
-                // If not recording, just copy what's there
                 copyToClipboard();
             }
             break;
+    }
+}
+
+// --- Hotkey / Macro Pad Handler ---
+
+function getKeyCombinationString(e) {
+    const parts = [];
+    if (e.ctrlKey) parts.push("Control");
+    if (e.altKey) parts.push("Alt");
+    if (e.shiftKey) parts.push("Shift");
+    if (e.metaKey) parts.push("Meta");
+
+    const key = e.code === "Space" ? "Space" : e.key;
+    if (!["Control", "Alt", "Shift", "Meta"].includes(e.key)) {
+        parts.push(key.length === 1 ? key.toUpperCase() : key);
+    }
+    return parts.join("+");
+}
+
+function loadShortcuts() {
+    try {
+        const saved = localStorage.getItem(SHORTCUTS_STORAGE_KEY);
+        if (saved) {
+            state.keybindings = { ...DEFAULT_KEYBINDINGS, ...JSON.parse(saved) };
+        }
+    } catch {
+        state.keybindings = { ...DEFAULT_KEYBINDINGS };
+    }
+    syncKeyInputs();
+}
+
+function saveShortcuts() {
+    localStorage.setItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(state.keybindings));
+}
+
+function syncKeyInputs() {
+    ui.keyInputs.forEach(input => {
+        const action = input.getAttribute("data-action");
+        if (state.keybindings[action]) {
+            input.value = state.keybindings[action];
+        }
+    });
+}
+
+function handleGlobalKeydown(e) {
+    // If recording a new shortcut binding
+    if (state.listeningForBinding) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const combo = getKeyCombinationString(e);
+        const action = state.listeningForBinding.getAttribute("data-action");
+
+        state.keybindings[action] = combo;
+        saveShortcuts();
+        syncKeyInputs();
+
+        state.listeningForBinding.classList.remove("recording");
+        state.listeningForBinding = null;
+        return;
+    }
+
+    // Ignore shortcut execution if user is actively typing inside text area
+    if (document.activeElement === ui.transcript && !e.ctrlKey && !e.altKey && e.code !== "Escape") {
+        return;
+    }
+
+    const currentCombo = getKeyCombinationString(e);
+
+    for (const [action, combo] of Object.entries(state.keybindings)) {
+        if (combo === currentCombo) {
+            e.preventDefault();
+            handleAction(action);
+            break;
+        }
     }
 }
 
@@ -348,11 +448,38 @@ ui.btnRefine.onclick = () => {
     refineText(template);
 };
 
+ui.btnToggleShortcuts.onclick = () => {
+    ui.shortcutsConfig.classList.toggle("hidden");
+    const isHidden = ui.shortcutsConfig.classList.contains("hidden");
+    ui.btnToggleShortcuts.textContent = isHidden ? "Configure Shortcuts" : "Close Config";
+};
+
+ui.btnResetShortcuts.onclick = () => {
+    state.keybindings = { ...DEFAULT_KEYBINDINGS };
+    saveShortcuts();
+    syncKeyInputs();
+};
+
+ui.keyInputs.forEach(input => {
+    input.onclick = () => {
+        if (state.listeningForBinding) {
+            state.listeningForBinding.classList.remove("recording");
+        }
+        state.listeningForBinding = input;
+        input.classList.add("recording");
+        input.value = "Press key...";
+    };
+});
+
+window.addEventListener("keydown", handleGlobalKeydown);
+
 // Start
 const midiHandler = new MIDIHandler(handleAction);
 midiHandler.init().then(success => {
     ui.midiStatus.textContent = success ? "MIDI: Active" : "MIDI: Not Available";
 });
+
+loadShortcuts();
 
 const savedTranscript = localStorage.getItem(STORAGE_KEY);
 if (savedTranscript) {
