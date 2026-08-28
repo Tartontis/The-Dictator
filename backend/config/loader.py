@@ -16,19 +16,17 @@ DEFAULT_CONFIG_PATHS = [
 
 @lru_cache(maxsize=1)
 def load_settings() -> Settings:
-    config_file = CONFIG_PATH
-    if not config_file.exists():
-        # Fallback to example config if actual config doesn't exist
-        # This allows the app to run out of the box
-        for candidate in DEFAULT_CONFIG_PATHS:
-            if candidate.exists():
-                config_file = candidate
-                break
-        else:
-            searched = ", ".join(str(path) for path in [CONFIG_PATH, *DEFAULT_CONFIG_PATHS])
-            raise FileNotFoundError(f"Configuration file not found at {searched}")
+    # Try the primary config path followed by fallbacks
+    # This allows the app to run out of the box with example configs
+    candidates = [CONFIG_PATH, *DEFAULT_CONFIG_PATHS]
 
-    with open(config_file, "rb") as f:
-        config_data = tomllib.load(f)
+    for candidate in candidates:
+        try:
+            with open(candidate, "rb") as f:
+                config_data = tomllib.load(f)
+            return Settings(**config_data)
+        except FileNotFoundError:
+            continue
 
-    return Settings(**config_data)
+    searched = ", ".join(str(path) for path in candidates)
+    raise FileNotFoundError(f"Configuration file not found at {searched}")
